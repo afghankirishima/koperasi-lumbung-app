@@ -65,14 +65,14 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
             <NavLink to="/anggota/transaksi/keluar" className="submenu-item">Anggota Keluar</NavLink>
             <NavLink to="/anggota/transaksi/approve-keluar" className="submenu-item">Approve Anggota Keluar</NavLink>
           </SubMenuGroup>
-          <NavLink to="/anggota/daftar-keluar" className={({isActive}) => `submenu-item ${isActive ? 'active' : ''}`}>Daftar Anggota Keluar</NavLink>
+          {/* <NavLink to="/anggota/daftar-keluar" className={({isActive}) => `submenu-item ${isActive ? 'active' : ''}`}>Daftar Anggota Keluar</NavLink> */}
           <SubMenuGroup title="Laporan">
             <NavLink to="/anggota/laporan/profil" className="submenu-item">Profil Anggota</NavLink>
             <NavLink to="/anggota/laporan/keluar" className="submenu-item">Laporan Anggota Keluar</NavLink>
           </SubMenuGroup>
         </MenuItem>
         <MenuItem icon={Wallet} title="Tabungan" to="/tabungan">
-          <NavLink to="/tabungan/registrasi" className="submenu-item">Registrasi Rekening</NavLink>
+          {/* <NavLink to="/tabungan/registrasi" className="submenu-item">Registrasi Rekening</NavLink> */}
           <SubMenuGroup title="Transaksi Tabungan">
             <NavLink to="/tabungan/transaksi/setoran" className="submenu-item">Setoran</NavLink>
             <NavLink to="/tabungan/transaksi/penarikan" className="submenu-item">Penarikan</NavLink>

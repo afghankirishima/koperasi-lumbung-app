@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { PrismaClient } = require('@prisma/client');
+const path = require('path'); 
 
 const prisma = new PrismaClient();
 const app = express();
@@ -14,29 +15,143 @@ app.get('/api/anggota', async (req, res) => {
   res.json(anggota);
 });
 
-app.post('/api/anggota', async (req, res) => {
-  const { nama, alamat, jenisKelamin, sbu, tglMasuk, simpananPokok, simpananWajib } = req.body;
-  const anggota = await prisma.anggota.create({
-    data: { 
-      nama, alamat, jenisKelamin, sbu, 
-      tglMasuk: new Date(tglMasuk),
-      simpananPokok: Number(simpananPokok) || 0,
-      simpananWajib: Number(simpananWajib) || 0
-    }
+async function generateAnggotaId() {
+  const semua = await prisma.anggota.findMany({
+    select: { id: true },
   });
-  res.json(anggota);
+
+  const existingIds = new Set(semua.map(a => a.id));
+
+  let id;
+  do {
+    // Random 6 digit: 100000 - 999999
+    const random = Math.floor(Math.random() * 900000) + 100000;
+    id = String(random);
+  } while (existingIds.has(id)); // ulangi kalau ID sudah ada
+
+  return id;
+}
+
+// app.post('/api/anggota', async (req, res) => {
+//   const { nama, alamat, jenisKelamin, sbu, tglMasuk, simpananPokok, simpananWajib } = req.body;
+//   const id = await generateAnggotaId(); 
+//   const anggota = await prisma.anggota.create({
+//     data: { 
+//       id, nama, alamat, jenisKelamin, sbu, 
+//       tglMasuk: new Date(tglMasuk),
+//       simpananPokok: Number(simpananPokok) || 0,
+//       simpananWajib: Number(simpananWajib) || 0,
+//       sbu, 
+//     }
+//   });
+//   res.json(anggota);
+// });
+
+app.post('/api/anggota', async (req, res) => {
+  // console.log('req.body:', req.body);
+  const { 
+    nama, alamat, jenisKelamin, sbu, tglMasuk, 
+    simpananPokok, simpananWajib,
+    bank, noRekening,noTelepon,noKtp,tempatLahir,tglLahir
+  } = req.body;
+
+  if (!noRekening || !noRekening.trim()) {
+    return res.status(400).json({ error: 'Nomor rekening wajib diisi.' });
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const id = await generateAnggotaId();
+      const sp = Number(simpananPokok) || 0;
+      const sw = Number(simpananWajib) || 0;
+
+      // Insert ke tabel Anggota
+      const anggota = await tx.anggota.create({
+        data: {
+          id,
+          nama,
+          alamat,
+          jenisKelamin,
+          sbu,
+          tglMasuk: new Date(tglMasuk),
+          simpananPokok: sp,
+          simpananWajib: sw,
+          noTelepon,
+          noKtp,
+          tempatLahir,
+          tglLahir: tglLahir ? new Date(tglLahir) : null,
+        }
+      });
+
+      // Insert ke tabel Tabungan — saldoPokok & saldoWajib dari simpananPokok & simpananWajib
+      const tabungan = await tx.tabungan.create({
+        data: {
+          anggotaId: anggota.id,  // pakai id anggota yang baru dibuat (bukan UUID)
+          noRekening: noRekening.trim(),
+          bank: bank || 'Mandiri',
+          saldoPokok: sp,         // dari simpananPokok
+          saldoWajib: sw,         // dari simpananWajib
+          saldoSukarela: 0,
+          status: 'Aktif'
+        }
+      });
+
+      // Insert transaksi setoran awal simpanan pokok
+      if (sp > 0) {
+        await tx.transaksiTabungan.create({
+          data: {
+            tabunganId: tabungan.id,
+            jenis: 'Setoran',
+            jenisSimpanan: 'Simpanan Pokok',
+            nominal: sp,
+            keterangan: 'Setoran Awal (Registrasi)'
+          }
+        });
+      }
+
+      // Insert transaksi setoran awal simpanan wajib
+      if (sw > 0) {
+        await tx.transaksiTabungan.create({
+          data: {
+            tabunganId: tabungan.id,
+            jenis: 'Setoran',
+            jenisSimpanan: 'Simpanan Wajib',
+            nominal: sw,
+            keterangan: 'Setoran Awal (Registrasi)'
+          }
+        });
+      }
+
+      return { anggota, tabungan }; // ← return keduanya
+    });
+
+    res.json(result); // ← { anggota, tabungan }
+  } catch (e) {
+    console.error('POST /api/anggota error:', e.message);
+    if (e.message.includes('Unique constraint')) {
+      return res.status(400).json({ error: 'Nomor rekening sudah digunakan.' });
+    }
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.put('/api/anggota/:id', async (req, res) => {
   const { id } = req.params;
-  const { nama, alamat, jenisKelamin, sbu, tglMasuk, simpananPokok, simpananWajib } = req.body;
+  const { nama, alamat, jenisKelamin, sbu, tglMasuk, simpananPokok, simpananWajib,noKtp, noTelepon, tempatLahir, tglLahir } = req.body;
   const anggota = await prisma.anggota.update({
     where: { id },
     data: { 
-      nama, alamat, jenisKelamin, sbu, 
+      nama,
+      alamat, 
+      jenisKelamin, 
+      sbu, 
       tglMasuk: new Date(tglMasuk),
       simpananPokok: Number(simpananPokok) || 0,
-      simpananWajib: Number(simpananWajib) || 0
+      simpananWajib: Number(simpananWajib) || 0,
+      noKtp: noKtp || null,           
+      noTelepon: noTelepon || null,   
+      tempatLahir: tempatLahir || null,
+      tglLahir: tglLahir ? new Date(tglLahir) : null,
     }
   });
   res.json(anggota);

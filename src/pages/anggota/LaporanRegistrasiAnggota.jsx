@@ -1,14 +1,27 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
-import { Pencil, Trash2, FileSpreadsheet, X, Save } from 'lucide-react';
+import { Pencil, Trash2, FileSpreadsheet, X, Save, CheckCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SBU_LIST = ['MAB', 'HLJ', 'NPA'];
+
+const formatRibuan = (val) => {
+  if (!val) return '';
+  const num = val.toString().replace(/[^0-9]/g, '');
+  return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+const parseRibuan = (val) => {
+  if (!val) return '';
+  return val.toString().replace(/[^0-9]/g, '');
+};
 
 const fmtDate = (val) => val ? new Date(val).toLocaleDateString('id-ID') : '-';
 
 export const LaporanRegistrasiAnggota = () => {
   const { data, addAnggota, updateAnggota, deleteAnggota } = useContext(AppContext);
+
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -25,24 +38,43 @@ export const LaporanRegistrasiAnggota = () => {
 
   const openEdit = (a) => {
     setEditingId(a.id);
-    setForm({ nama: a.nama, alamat: a.alamat, jenisKelamin: a.jenisKelamin, tglMasuk: a.tglMasuk || '', sbu: a.sbu, simpananPokok: a.simpananPokok || 0, simpananWajib: a.simpananWajib || 0 });
+    setForm({ 
+      nama: a.nama, 
+      alamat: a.alamat, 
+      jenisKelamin: a.jenisKelamin, 
+      tglMasuk: a.tglMasuk ? a.tglMasuk.split('T')[0] : '',
+      sbu: a.sbu, 
+      simpananPokok: a.simpananPokok || 0, 
+      simpananWajib: a.simpananWajib || 0,
+      noKtp: a.noKtp || '',          // ← tambah
+      noTelepon: a.noTelepon || '',  // ← tambah
+      tempatLahir: a.tempatLahir || '', // ← tambah
+      tglLahir: a.tglLahir ? new Date(a.tglLahir).toISOString().split('T')[0] : '', });
     setShowModal(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (editingId) {
-      updateAnggota(editingId, form);
+      await updateAnggota(editingId, form);
+      setSuccessMsg('Data anggota berhasil diperbarui!');
     } else {
-      addAnggota(form);
+      await addAnggota(form);
+      setSuccessMsg('Anggota berhasil ditambahkan!');
     }
     setShowModal(false);
     setEditingId(null);
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
+
 
   const handleDelete = (id) => {
     deleteAnggota(id);
     setConfirmDeleteId(null);
+    setSuccessMsg('Data anggota berhasil dihapus!');
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
   };
 
   const exportToExcel = () => {
@@ -53,7 +85,11 @@ export const LaporanRegistrasiAnggota = () => {
       'Jenis Kelamin': a.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan',
       'SBU': a.sbu,
       'Tgl Masuk': fmtDate(a.tglMasuk),
-      'Status': a.status
+      'Status': a.status,
+      'Tempat Lahir' : a.tempatLahir,
+      'Taggal Lahir' : a.tglLahir,
+      'Nomor KTP' : a.noKtp,
+      'Nomor Telephone' : a.noTelepon
     })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Registrasi Anggota');
@@ -63,6 +99,12 @@ export const LaporanRegistrasiAnggota = () => {
   return (
     <div className="page-content">
       <h2 className="page-title mb-4">Laporan Registrasi Anggota</h2>
+      {showSuccess && (
+        <div className="alert-success">
+          <CheckCircle size={20} />
+          <span>{successMsg}</span>
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
         <input type="text" className="form-control" placeholder="🔍 Cari nama atau SBU..."
@@ -137,7 +179,13 @@ export const LaporanRegistrasiAnggota = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Tanggal Masuk</label>
-                  <input type="date" className="form-control" value={form.tglMasuk} onChange={e => setForm({ ...form, tglMasuk: e.target.value })} required />
+                  <input type="date" className="form-control" value={form.tglMasuk} onChange={e => setForm({ ...form, tglMasuk: e.target.value })} required disabled
+                    style={{ 
+                      backgroundColor: '#f3f4f6', 
+                      color: '#9ca3af',
+                      cursor: 'not-allowed'
+                    }}
+                  />
                 </div>
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label className="form-label">Alamat</label>
@@ -145,11 +193,61 @@ export const LaporanRegistrasiAnggota = () => {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Simpanan Pokok Awal</label>
-                  <input type="number" className="form-control" value={form.simpananPokok} onChange={e => setForm({ ...form, simpananPokok: e.target.value })} min="0" />
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={formatRibuan(form.simpananPokok)} 
+                    onChange={e => setForm({ ...form, simpananPokok: parseRibuan(e.target.value) })}
+                    disabled
+                    style={{ 
+                      backgroundColor: '#f3f4f6', 
+                      color: '#9ca3af',
+                      cursor: 'not-allowed'
+                    }}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Simpanan Wajib Awal</label>
-                  <input type="number" className="form-control" value={form.simpananWajib} onChange={e => setForm({ ...form, simpananWajib: e.target.value })} min="0" />
+                   <input type="number" className="form-control"
+                   value={formatRibuan(form.simpananWajib)}
+                   onChange={e => setForm({ ...form, simpananWajib: parseRibuan(e.target.value) })} 
+                   disabled
+                    style={{ 
+                      backgroundColor: '#f3f4f6', 
+                      color: '#9ca3af',
+                      cursor: 'not-allowed'
+                    }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Tempat Lahir</label>
+                  <input type="text" className="form-control" 
+                    value={form.tempatLahir} 
+                    onChange={e => setForm({ ...form, tempatLahir: e.target.value })} />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Tanggal Lahir</label>
+                  <input type="date" className="form-control" 
+                    value={form.tglLahir} 
+                    onChange={e => setForm({ ...form, tglLahir: e.target.value })} />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Nomor KTP</label>
+                  <input type="text" className="form-control" 
+                    value={form.noKtp}
+                    onChange={e => setForm({ ...form, noKtp: e.target.value.replace(/[^0-9]/g, '') })}
+                    maxLength={16}
+                    placeholder="16 digit NIK" />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Nomor Telepon</label>
+                  <input type="text" className="form-control" 
+                    value={form.noTelepon}
+                    onChange={e => setForm({ ...form, noTelepon: e.target.value.replace(/[^0-9]/g, '') })}
+                    placeholder="08123456789" />
                 </div>
               </div>
               <div className="form-actions mt-4">

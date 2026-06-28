@@ -13,8 +13,13 @@ model Anggota {
   alamat       String?
   jenisKelamin String
   sbu          String
+  noKtp        String?  
+  noTelepon    String?
   tglMasuk     DateTime @default(now())
   status       String   @default("Aktif")
+  tempatLahir  String?
+  tglLahir     DateTime?
+
   
   simpananPokok Float @default(0)
   simpananWajib Float @default(0)

@@ -19,11 +19,17 @@ const INITIAL_FORM = {
   tglMasuk: new Date().toISOString().split('T')[0],
   sbu: 'MAB',
   simpananPokok: 0,
-  simpananWajib: 0
+  simpananWajib: 0,
+  bank: 'Mandiri',
+  noRekening: '13900',
+  noTelepon: '', 
+  noKtp: '',
+  tempatLahir: '',
+  tglLahir: '',
 };
 
 export const RegistrasiAnggota = () => {
-  const { addAnggota } = useContext(AppContext);
+  const { addAnggota, addTabungan } = useContext(AppContext);
   
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -32,12 +38,22 @@ export const RegistrasiAnggota = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    addAnggota(formData);
-    setFormData(INITIAL_FORM);
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+    // Validasi noRekening tidak boleh hanya '13900'
+    if (formData.noRekening === '13900' || formData.noRekening.length <= 5) {
+      alert('Nomor rekening harus diisi lengkap!');
+      return;
+    }
+    // console.log('FormData yang dikirim:', formData);
+    try {
+      await addAnggota(formData); // backend sekalian bikin tabungan + transaksi setoran awal
+      setFormData(INITIAL_FORM);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      alert(error?.response?.data?.error || 'Gagal menyimpan data!');
+    }
   };
 
   return (
@@ -93,6 +109,27 @@ export const RegistrasiAnggota = () => {
             </div>
 
             <div className="form-group">
+              <label className="form-label">Tempat Lahir</label>
+              <input 
+                type="text" 
+                name="tempatLahir" 
+                className="form-control" 
+                value={formData.tempatLahir} 
+                onChange={handleChange} required
+                placeholder="Masukkan Tempat Lahir " />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tanggal Lahir</label>
+              <input 
+                type="date" 
+                name="tglLahir" 
+                className="form-control" 
+                value={formData.tglLahir} 
+                onChange={handleChange} required />
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Jenis Kelamin</label>
               <select 
                 name="jenisKelamin"
@@ -120,6 +157,40 @@ export const RegistrasiAnggota = () => {
             </div>
 
             <div className="form-group">
+              <label className="form-label">Nomor KTP</label>
+              <input 
+                type="text" 
+                name="noKtp" 
+                className="form-control"
+                value={formData.noKtp} 
+                onChange={(e) => {
+                  const angkaSaja = e.target.value.replace(/[^0-9]/g, '');
+                  setFormData({ ...formData, noKtp: angkaSaja });
+                }}
+                required
+                placeholder="Masukkan 16 digit NIK"
+                maxLength={16}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Nomor Telephone</label>
+              <input 
+                type="text" 
+                name="noTelepon" 
+                className="form-control"
+                value={formData.noTelepon} 
+                onChange={(e) => {
+                  const angkaSaja = e.target.value.replace(/[^0-9]/g, '');
+                  setFormData({ ...formData, noTelepon: angkaSaja });
+                }}
+                required
+                placeholder="Masukkan nomor Telephone"
+                maxLength={16}
+              />
+            </div>
+
+            <div className="form-group">
               <label className="form-label">Simpanan Pokok Awal</label>
               <input 
                 type="text" 
@@ -139,6 +210,35 @@ export const RegistrasiAnggota = () => {
                 onChange={(e) => setFormData({ ...formData, simpananWajib: parseRibuan(e.target.value) })}
               />
             </div>
+
+            <div className="form-group">
+              <label className="form-label">Bank</label>
+              <select name="bank" className="form-control" 
+                value={formData.bank} onChange={handleChange} required>
+                <option value="Mandiri">Mandiri</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Nomor Rekening</label>
+              <input 
+                type="text" 
+                name="noRekening" 
+                className="form-control"
+                value={formData.noRekening} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Jaga prefix 13900 tidak bisa dihapus
+                  if (!val.startsWith('13900')) return;
+                  // Hanya angka setelah prefix
+                  const suffix = val.slice(5).replace(/[^0-9]/g, '');
+                  setFormData({ ...formData, noRekening: '13900' + suffix });
+                }}
+                required
+                placeholder="13900..."
+              />
+            </div>
+
           </div>
 
           <div className="form-actions mt-4">

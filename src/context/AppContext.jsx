@@ -48,9 +48,17 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   // --- ANGGOTA ---
-  const addAnggota = async (anggotaBaru) => {
-    await axios.post(`${API_URL}/anggota`, anggotaBaru);
-    fetchData();
+  // const addAnggota = async (anggotaBaru) => {
+  //   await axios.post(`${API_URL}/anggota`, anggotaBaru);
+  //   fetchData();
+  // };
+  const addAnggota = async (formData) => {
+    const res = await axios.post(`${API_URL}/anggota`, formData);
+    // console.log('Response dari backend:', res.data); // hapus setelah confirmed
+    
+    // res.data sekarang = { anggota, tabungan }
+    await fetchData(); // tarik ulang semua tabel sekaligus
+    return res.data.anggota;
   };
 
   const updateAnggota = async (id, updatedData) => {
