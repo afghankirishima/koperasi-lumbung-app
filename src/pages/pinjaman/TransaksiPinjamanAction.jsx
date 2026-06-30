@@ -18,7 +18,6 @@ const parseRibuan = (val) => {
 export const TransaksiPinjamanAction = ({ action }) => {
   const { data, updateStatusPinjaman, addTransaksiPinjaman } = useContext(AppContext);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [nominalDisetujuiState, setNominalDisetujuiState] = useState({});
   const [filterStatus, setFilterStatus] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -46,12 +45,10 @@ export const TransaksiPinjamanAction = ({ action }) => {
   tableData.sort((a, b) => new Date(b.tglPengajuan) - new Date(a.tglPengajuan));
 
   const handleCairkan = (pinjamanId, nominalAsli) => {
-    const finalNominal = nominalDisetujuiState[pinjamanId] ? parseRibuan(nominalDisetujuiState[pinjamanId]) : nominalAsli;
     addTransaksiPinjaman({ 
       pinjamanId, 
       jenis: 'Pencairan', 
-      nominal: Number(nominalAsli), 
-      nominalDisetujui: Number(finalNominal) 
+      nominal: Number(nominalAsli)
     });
     // Status pinjaman akan otomatis diupdate ke Aktif oleh backend saat jenis === 'Pencairan'
     setShowSuccess(true);
@@ -106,8 +103,8 @@ export const TransaksiPinjamanAction = ({ action }) => {
               <tr>
                 <th>No</th>
                 <th>Nama Anggota</th>
-                <th>Nominal Pengajuan</th>
-                {action === 'Pencairan' && <th>Nominal Disetujui</th>}
+                <th>Nominal Pinjaman</th>
+                <th>Tenor</th>
                 <th>Status</th>
                 <th>Tanggal Pengajuan</th>
                 {action === 'Pencairan' && <th style={{ textAlign: 'center' }}>Aksi</th>}
@@ -116,7 +113,7 @@ export const TransaksiPinjamanAction = ({ action }) => {
             <tbody>
               {tableData.length === 0 ? (
                 <tr>
-                  <td colSpan={action === 'Pencairan' ? 6 : 5} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan={action === 'Pencairan' ? 7 : 6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     Tidak ada data pinjaman.
                   </td>
                 </tr>
@@ -142,21 +139,7 @@ export const TransaksiPinjamanAction = ({ action }) => {
                     <td>{i + 1}</td>
                     <td><strong>{ang?.nama || '-'}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({ang?.sbu})</span></td>
                     <td style={{ fontWeight: 600 }}>{fmtIDR(p.nominalPinjaman)}</td>
-                    {action === 'Pencairan' && (
-                      <td>
-                        {p.status === 'Disetujui' ? (
-                          <input 
-                            type="text" 
-                            className="form-control" 
-                            style={{ margin: 0, minWidth: '130px', padding: '6px 12px' }}
-                            value={formatRibuan(nominalDisetujuiState[p.id] !== undefined ? nominalDisetujuiState[p.id] : p.nominalPinjaman)}
-                            onChange={(e) => setNominalDisetujuiState({ ...nominalDisetujuiState, [p.id]: parseRibuan(e.target.value) })}
-                          />
-                        ) : (
-                          <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmtIDR(p.nominalPinjaman)}</span>
-                        )}
-                      </td>
-                    )}
+                    <td>{p.tenorBulan} Bulan</td>
                     <td>
                       <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 600, background: statusBg, color: statusColor }}>
                         {displayStatus}

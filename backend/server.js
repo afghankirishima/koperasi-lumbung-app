@@ -333,10 +333,15 @@ app.post('/api/pinjaman', async (req, res) => {
 
 app.put('/api/pinjaman/:id/status', async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, nominalPinjaman, tenorBulan } = req.body;
+  
+  const updateData = { status };
+  if (nominalPinjaman !== undefined) updateData.nominalPinjaman = parseFloat(nominalPinjaman);
+  if (tenorBulan !== undefined) updateData.tenorBulan = parseInt(tenorBulan);
+
   const pinjaman = await prisma.pinjaman.update({
     where: { id },
-    data: { status }
+    data: updateData
   });
   res.json(pinjaman);
 });
@@ -346,28 +351,23 @@ app.get('/api/transaksi-pinjaman', async (req, res) => {
   res.json(trx);
 });
 
-app.post('/api/transaksi-pinjaman', async (req, res) => {
-  try {
-    const { pinjamanId, jenis, nominal, nominalDisetujui } = req.body;
-    
-    const nominalFinal = nominalDisetujui ? parseFloat(nominalDisetujui) : parseFloat(nominal) || 0;
-
-    const trx = await prisma.transaksiPinjaman.create({
-      data: { pinjamanId, jenis, nominal: nominalFinal }
-    });
-    
-    // Jika transaksi adalah Pencairan, update status pinjaman menjadi Aktif
-    // Jika ada perubahan nominal (nominalDisetujui), update nominalPinjaman agar terintegrasi dengan perhitungan angsuran
-    if (jenis === 'Pencairan') {
-      const updateData = { status: 'Aktif' };
-      if (nominalDisetujui) {
-        updateData.nominalPinjaman = nominalFinal;
-      }
-      await prisma.pinjaman.update({
-        where: { id: pinjamanId },
-        data: updateData
+  app.post('/api/transaksi-pinjaman', async (req, res) => {
+    try {
+      const { pinjamanId, jenis, nominal, nominalDisetujui, tenorDisetujui } = req.body;
+      
+      const nominalFinal = nominalDisetujui ? parseFloat(nominalDisetujui) : parseFloat(nominal) || 0;
+  
+      const trx = await prisma.transaksiPinjaman.create({
+        data: { pinjamanId, jenis, nominal: nominalFinal }
       });
-    }
+      
+      // Jika transaksi adalah Pencairan, update status pinjaman menjadi Aktif
+      if (jenis === 'Pencairan') {
+        await prisma.pinjaman.update({
+          where: { id: pinjamanId },
+          data: { status: 'Aktif' }
+        });
+      }
     
     // Jika transaksi adalah Pelunasan, update status pinjaman menjadi Lunas
     if (jenis === 'Pelunasan') {

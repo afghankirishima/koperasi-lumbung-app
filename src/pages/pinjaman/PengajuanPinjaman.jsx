@@ -16,8 +16,8 @@ const parseRibuan = (val) => {
   return val.toString().replace(/[^0-9]/g, '');
 };
 
-// Pembulatan ke pecahan terdekat (≤499 → turun, ≥500 → naik) = Math.round() normal
-const roundCalc = (val) => Math.round(val);
+// Pembulatan ke kelipatan 1000 terdekat (≤499 → 000, ≥500 → 1000)
+const roundCalc = (val) => Math.round(val / 1000) * 1000;
 
 const INITIAL_FORM = { anggotaId: '', nominalPinjaman: '', tenorBulan: '12', tujuan: '' };
 
@@ -27,6 +27,8 @@ export const PengajuanPinjaman = () => {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [showSuccess, setShowSuccess] = useState(false);
   const [simulation, setSimulation] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Anggota aktif yang TIDAK memiliki pinjaman berjalan AND SUDAH memiliki rekening tabungan
   const pinjamanAktifIds = new Set(
@@ -127,10 +129,16 @@ export const PengajuanPinjaman = () => {
                 value={formData.tenorBulan}
                 onChange={(e) => { setFormData({ ...formData, tenorBulan: e.target.value }); setSimulation(null); }}
               >
+                <option value="3">3 Bulan</option>
+                <option value="4">4 Bulan</option>
+                <option value="5">5 Bulan</option>
                 <option value="6">6 Bulan</option>
+                <option value="7">7 Bulan</option>
+                <option value="8">8 Bulan</option>
+                <option value="9">9 Bulan</option>
+                <option value="10">10 Bulan</option>
+                <option value="11">11 Bulan</option>
                 <option value="12">12 Bulan</option>
-                <option value="24">24 Bulan</option>
-                <option value="36">36 Bulan</option>
               </select>
             </div>
             <div className="form-group">
@@ -209,23 +217,68 @@ export const PengajuanPinjaman = () => {
             <tbody>
               {data.pinjaman.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Belum ada data pengajuan pinjaman.</td></tr>
-              ) : data.pinjaman.map((p, i) => {
-                const ang = data.anggota.find(a => a.id === p.anggotaId);
-                return (
-                  <tr key={p.id}>
-                    <td>{i + 1}</td>
-                    <td><strong>{ang?.nama || '-'}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({ang?.sbu})</span></td>
-                    <td style={{ fontWeight: 600 }}>{fmtIDR(p.nominalPinjaman)}</td>
-                    <td>{p.tenorBulan} Bln</td>
-                    <td>{p.tujuan || '-'}</td>
-                    <td>{getStatusBadge(p.status)}</td>
-                    <td>{fmtDate(p.tglPengajuan)}</td>
-                  </tr>
-                );
-              })}
+              ) : (() => {
+                const sortedPinjaman = [...data.pinjaman].sort((a, b) => new Date(b.tglPengajuan) - new Date(a.tglPengajuan));
+                const totalPages = Math.ceil(sortedPinjaman.length / itemsPerPage);
+                const startIdx = (currentPage - 1) * itemsPerPage;
+                const pageData = sortedPinjaman.slice(startIdx, startIdx + itemsPerPage);
+                return pageData.map((p, i) => {
+                  const ang = data.anggota.find(a => a.id === p.anggotaId);
+                  return (
+                    <tr key={p.id}>
+                      <td>{startIdx + i + 1}</td>
+                      <td><strong>{ang?.nama || '-'}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({ang?.sbu})</span></td>
+                      <td style={{ fontWeight: 600 }}>{fmtIDR(p.nominalPinjaman)}</td>
+                      <td>{p.tenorBulan} Bln</td>
+                      <td>{p.tujuan || '-'}</td>
+                      <td>{getStatusBadge(p.status)}</td>
+                      <td>{fmtDate(p.tglPengajuan)}</td>
+                    </tr>
+                  );
+                });
+              })()}
             </tbody>
           </table>
         </div>
+        {/* Pagination */}
+        {data.pinjaman.length > itemsPerPage && (() => {
+          const totalPages = Math.ceil(data.pinjaman.length / itemsPerPage);
+          return (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Menampilkan {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, data.pinjaman.length)} dari {data.pinjaman.length} data
+              </span>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  className="btn"
+                  style={{ padding: '6px 12px', fontSize: '0.85rem', background: 'var(--bg-secondary)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '6px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1 }}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ← Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    className="btn"
+                    style={{ padding: '6px 12px', fontSize: '0.85rem', background: page === currentPage ? 'var(--primary)' : 'var(--bg-secondary)', color: page === currentPage ? 'white' : 'var(--text)', border: '1px solid var(--border)', borderRadius: '6px', fontWeight: page === currentPage ? 700 : 400 }}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  className="btn"
+                  style={{ padding: '6px 12px', fontSize: '0.85rem', background: 'var(--bg-secondary)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '6px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1 }}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
