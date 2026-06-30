@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
+import { SearchableSelect } from '../../components/SearchableSelect';
 import { Save } from 'lucide-react';
 
 export const PindahBuku = () => {
@@ -32,14 +33,14 @@ export const PindahBuku = () => {
       <div className="card">
         <form onSubmit={handleSubmit} className="form-container">
           <div className="grid-2">
-            <div className="form-group">
+            <div className="form-group" style={{ flex: 1, minWidth: '250px' }}>
               <label className="form-label">Pilih Anggota</label>
-              <select className="form-control" value={anggotaId} onChange={(e) => setAnggotaId(e.target.value)} required>
-                <option value="">-- Pilih Anggota --</option>
-                {activeAnggota.map(a => (
-                  <option key={a.id} value={a.id}>{a.nama} (SBU saat ini: {a.sbu})</option>
-                ))}
-              </select>
+              <SearchableSelect 
+                options={activeAnggota.map(a => ({ value: a.id, label: `${a.nama} (${a.sbu})` }))}
+                value={anggotaId}
+                onChange={setAnggotaId}
+                placeholder="Cari nama anggota..."
+              />
             </div>
             {selectedAnggota && (
               <div className="form-group">

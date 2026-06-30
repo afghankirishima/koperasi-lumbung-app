@@ -50,11 +50,11 @@ const SubMenuGroup = ({ title, children, defaultOpen = false }) => {
 export const Sidebar = ({ isMobileOpen, onClose }) => {
   return (
     <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
-      <div className="sidebar-header">
-        <div className="logo-icon"><Building size={24} color="var(--primary-dark)" /></div>
+      <div className="sidebar-header" style={{ gap: '12px' }}>
+        <img src="/logo.jpg" alt="Logo Koperasi" style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
         <div className="logo-text">
           <h3>Lumbung Artha</h3>
-          <p>Koperasi Sejahtera</p>
+          <p>Sejahtera</p>
         </div>
       </div>
       <div className="sidebar-nav">

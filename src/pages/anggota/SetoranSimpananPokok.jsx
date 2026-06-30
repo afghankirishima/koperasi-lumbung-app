@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
+import { SearchableSelect } from '../../components/SearchableSelect';
 import { Save, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -66,19 +67,14 @@ export const SetoranSimpananPokok = () => {
         <h3 className="card-title">Form Input Setoran</h3>
         <form onSubmit={handleSubmit} className="form-container">
           <div className="grid-2">
-            <div className="form-group">
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label className="form-label">Pilih Anggota</label>
-              <select 
-                className="form-control" 
+              <SearchableSelect 
+                options={activeAnggota.map(a => ({ value: a.id, label: `${a.nama} (${a.sbu})` }))}
                 value={formData.anggotaId}
-                onChange={(e) => setFormData({ ...formData, anggotaId: e.target.value })}
-                required
-              >
-                <option value="">-- Pilih Anggota --</option>
-                {activeAnggota.map(a => (
-                  <option key={a.id} value={a.id}>{a.nama} ({a.sbu})</option>
-                ))}
-              </select>
+                onChange={(value) => setFormData({ ...formData, anggotaId: value })}
+                placeholder="Cari nama anggota..."
+              />
             </div>
             <div className="form-group">
               <label className="form-label">Nominal Setoran (Rp)</label>

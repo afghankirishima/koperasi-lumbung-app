@@ -1,6 +1,7 @@
-import React, { useState, useContext, useRef, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
+import { SearchableSelect } from '../../components/SearchableSelect';
 import { AppContext } from '../../context/AppContext';
-import { Save, Search } from 'lucide-react';
+import { Save } from 'lucide-react';
 
 const formatRibuan = (val) => {
   if (!val) return '';
@@ -12,83 +13,6 @@ const parseRibuan = (val) => {
   return val.toString().replace(/[^0-9]/g, '');
 };
 
-// ── Searchable dropdown component ──────────────────────────────────────────────
-const SearchableSelect = ({ options, value, onChange, placeholder = 'Cari...' }) => {
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  const filtered = options.filter(o =>
-    o.label.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const selected = options.find(o => o.value === value);
-
-  useEffect(() => {
-    const handleClick = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <div
-        className="form-control"
-        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none' }}
-        onClick={() => setOpen(o => !o)}
-      >
-        <span style={{ color: selected ? 'inherit' : 'var(--text-muted)' }}>
-          {selected ? selected.label : placeholder}
-        </span>
-        <Search size={16} color="var(--text-muted)" />
-      </div>
-
-      {open && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
-          background: 'var(--bg-card)', border: '1.5px solid var(--primary)',
-          borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-          marginTop: '4px', overflow: 'hidden'
-        }}>
-          <div style={{ padding: '8px', borderBottom: '1px solid var(--border)' }}>
-            <input
-              autoFocus
-              type="text"
-              className="form-control"
-              placeholder="Ketik nama anggota..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              style={{ margin: 0, fontSize: '0.9rem' }}
-              onClick={e => e.stopPropagation()}
-            />
-          </div>
-          <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-            {filtered.length === 0 ? (
-              <div style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Tidak ditemukan</div>
-            ) : filtered.map(o => (
-              <div
-                key={o.value}
-                style={{
-                  padding: '10px 16px', cursor: 'pointer', fontSize: '0.9rem',
-                  background: o.value === value ? 'var(--primary-light)' : 'transparent',
-                  color: o.value === value ? 'var(--primary)' : 'inherit',
-                  fontWeight: o.value === value ? 600 : 400,
-                  transition: 'background 0.15s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = o.value === value ? 'var(--primary-light)' : 'var(--bg-secondary)'}
-                onMouseLeave={e => e.currentTarget.style.background = o.value === value ? 'var(--primary-light)' : 'transparent'}
-                onClick={() => { onChange(o.value); setQuery(''); setOpen(false); }}
-              >
-                {o.label}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-// ──────────────────────────────────────────────────────────────────────────────
 
 export const TransaksiTabungan = ({ jenis }) => {
   const { data, addTransaksiTabungan } = useContext(AppContext);

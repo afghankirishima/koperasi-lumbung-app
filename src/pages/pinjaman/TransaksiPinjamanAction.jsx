@@ -19,15 +19,31 @@ export const TransaksiPinjamanAction = ({ action }) => {
   const { data, updateStatusPinjaman, addTransaksiPinjaman } = useContext(AppContext);
   const [showSuccess, setShowSuccess] = useState(false);
   const [nominalDisetujuiState, setNominalDisetujuiState] = useState({});
+  const [filterStatus, setFilterStatus] = useState('Semua');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Pencairan: Tampilkan Disetujui (Belum Cair) & Aktif (Sudah Cair)
   // Pelunasan: Tampilkan Lunas
   let tableData = [];
   if (action === 'Pencairan') {
     tableData = data.pinjaman.filter(p => p.status === 'Disetujui' || p.status === 'Aktif');
+    if (filterStatus === 'Belum Cair') {
+      tableData = tableData.filter(p => p.status === 'Disetujui');
+    } else if (filterStatus === 'Sudah Cair') {
+      tableData = tableData.filter(p => p.status === 'Aktif');
+    }
   } else if (action === 'Pelunasan') {
     tableData = data.pinjaman.filter(p => p.status === 'Lunas');
   }
+
+  if (searchQuery) {
+    tableData = tableData.filter(p => {
+      const ang = data.anggota.find(a => a.id === p.anggotaId);
+      return ang && ang.nama.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }
+
+  tableData.sort((a, b) => new Date(b.tglPengajuan) - new Date(a.tglPengajuan));
 
   const handleCairkan = (pinjamanId, nominalAsli) => {
     const finalNominal = nominalDisetujuiState[pinjamanId] ? parseRibuan(nominalDisetujuiState[pinjamanId]) : nominalAsli;
@@ -55,12 +71,34 @@ export const TransaksiPinjamanAction = ({ action }) => {
       )}
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-        <div style={{ padding: '20px 24px 12px', borderBottom: '1px solid var(--border)' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+        <div style={{ padding: '20px 24px 12px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0, flex: 1, minWidth: '250px' }}>
             {action === 'Pencairan' 
               ? 'Daftar anggota yang pengajuannya sudah disetujui. Klik "Cairkan" untuk melakukan pencairan.'
               : 'Daftar anggota yang sudah melunasi seluruh angsuran pinjaman.'}
           </p>
+          {action === 'Pencairan' && (
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Cari nama anggota..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: '220px', margin: 0 }}
+              />
+              <select 
+                className="form-control" 
+                style={{ width: 'auto', minWidth: '180px', margin: 0 }}
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="Semua">Semua Status</option>
+                <option value="Belum Cair">Belum Cair</option>
+                <option value="Sudah Cair">Sudah Cair</option>
+              </select>
+            </div>
+          )}
         </div>
         <div className="table-container">
           <table className="data-table" style={{ width: '100%' }}>

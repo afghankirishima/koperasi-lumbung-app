@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AppContext } from '../../context/AppContext';
+import { SearchableSelect } from '../../components/SearchableSelect';
 import { Calendar } from 'lucide-react';
 
 const fmtIDR = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(val) || 0);
@@ -95,23 +96,18 @@ export const FormAngsuran = () => {
       <div className="card mb-4">
         <div className="form-group mb-0">
           <label className="form-label" style={{ color: 'var(--text-muted)' }}>Pilih Pinjaman</label>
-          <select 
-            className="form-control" 
-            value={pinjamanId} 
-            onChange={(e) => setPinjamanId(e.target.value)} 
-            required
-            style={{ fontWeight: pinjamanId ? '600' : '400' }}
-          >
-            <option value="">-- Pilih Pinjaman --</option>
-            {targetPinjaman.map(p => {
-               const a = data.anggota.find(a => a.id === p.anggotaId);
-               return (
-                 <option key={p.id} value={p.id}>
-                   {a?.nama} - Rp {Number(p.nominalPinjaman).toLocaleString('id-ID')}
-                 </option>
-               );
+          <SearchableSelect 
+            options={targetPinjaman.map(p => {
+              const a = data.anggota.find(a => a.id === p.anggotaId);
+              return { 
+                value: p.id, 
+                label: `${a?.nama || 'Unknown'} - Rp ${Number(p.nominalPinjaman).toLocaleString('id-ID')}` 
+              };
             })}
-          </select>
+            value={pinjamanId}
+            onChange={setPinjamanId}
+            placeholder="Pilih Pinjaman..."
+          />
         </div>
       </div>
 

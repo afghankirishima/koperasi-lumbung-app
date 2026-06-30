@@ -176,6 +176,7 @@ a {
 }
 
 .form-control {
+  width: 100%;
   padding: 12px 16px;
   font-size: 0.95rem;
   border: 1px solid var(--border);
@@ -285,6 +286,8 @@ tbody tr:last-child td {
   max-width: 520px;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.25s ease;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-header {
