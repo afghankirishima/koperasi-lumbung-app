@@ -40,12 +40,32 @@ export const PengajuanPinjaman = () => {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-  const eligibleAnggota = data.anggota.filter(a => 
-    a.status === 'Aktif' && 
-    !pinjamanAktifIds.has(a.id) && 
-    anggotaDenganRekening.has(a.id) &&
-    new Date(a.tglMasuk) <= oneYearAgo
-  );
+  console.log("Tanggal batas 1 tahun:", oneYearAgo);
+
+  const eligibleAnggota = data.anggota.filter(a => {
+  const tglMasuk = new Date(a.tglMasuk);
+
+  const statusAktif = a.status === "Aktif";
+  const tidakPunyaPinjaman = !pinjamanAktifIds.has(a.id);
+  const punyaRekening = anggotaDenganRekening.has(a.id);
+  const lebihDariSetahun = tglMasuk <= oneYearAgo;
+
+    console.table({
+      Nama: a.nama,
+      TglMasuk: a.tglMasuk,
+      StatusAktif: statusAktif,
+      TidakPunyaPinjaman: tidakPunyaPinjaman,
+      PunyaRekening: punyaRekening,
+      LebihDari1Tahun: lebihDariSetahun
+    });
+
+    return (
+      statusAktif &&
+      tidakPunyaPinjaman &&
+      punyaRekening &&
+      lebihDariSetahun
+    );
+  });
 
   const handleCalculate = () => {
     const nominal = Number(formData.nominalPinjaman);
