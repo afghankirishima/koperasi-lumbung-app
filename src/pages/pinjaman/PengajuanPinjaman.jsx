@@ -37,10 +37,14 @@ export const PengajuanPinjaman = () => {
       .map(p => p.anggotaId)
   );
   const anggotaDenganRekening = new Set(data.tabungan.map(t => t.anggotaId));
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
   const eligibleAnggota = data.anggota.filter(a => 
     a.status === 'Aktif' && 
     !pinjamanAktifIds.has(a.id) && 
-    anggotaDenganRekening.has(a.id)
+    anggotaDenganRekening.has(a.id) &&
+    new Date(a.tglMasuk) <= oneYearAgo
   );
 
   const handleCalculate = () => {
